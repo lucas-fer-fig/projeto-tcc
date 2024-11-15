@@ -1,6 +1,6 @@
 function [time, freq_data, Vsa_values, Vta_values, Ia_values] = simula_modelos()
     % Diretório base dos modelos
-    base_dir = fullfile(pwd, 'Simulink');  % Usa o diretório de trabalho atual e 'Simulink'
+    base_dir = fullfile(pwd, 'Simulink');
     model_prefix = 'projeto_';
 
     % Lista dos modelos para simulação e seus parâmetros Kp e Ki

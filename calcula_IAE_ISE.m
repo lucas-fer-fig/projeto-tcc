@@ -9,10 +9,16 @@ function calcula_IAE_ISE()
     Ki_values = [4228, 7871.2, 5202.3, 1440];
     freq_teste_values = [2, 4, 6, 8, 10, 12]; % Valores de freq_teste a serem testados
     sim_time = 0.6; % Tempo total de simulação em segundos
+    mid_time = sim_time / 2; % Metade do tempo de simulação
 
     % Pré-alocar células para resultados organizados para cada modelo e frequência
     resultados = cell(length(modelos) * length(freq_teste_values), 4);
     row = 1;
+
+    % Para plotagem: armazenar dados para subplot
+    pll_responses = cell(length(modelos), length(freq_teste_values));
+    rede_responses = cell(length(modelos), length(freq_teste_values));
+    time_vector = [];
 
     % Executar a simulação para cada modelo e calcular ISE e IAE para cada freq_teste
     for i = 1:length(modelos)
@@ -41,15 +47,32 @@ function calcula_IAE_ISE()
         for j = 1:length(freq_teste_values)
             freq_teste = freq_teste_values(j);
 
-            % Definir o valor do parâmetro freq_teste
+            % Definir o valor inicial do parâmetro freq_teste para 0
+            set_param(bloco_freq_teste, 'Value', '0');
+
+            % Executar a simulação até a metade
+            simOut = sim(modelo_atual, 'StopTime', num2str(mid_time));
+            time1 = simOut.(['freq_' modelos{i}]).time; % Tempo até a metade
+            freq_data1 = simOut.(['freq_' modelos{i}]).signals.values; % Dados de frequência
+
+            % Alterar o valor do parâmetro freq_teste para o valor do intervalo
             set_param(bloco_freq_teste, 'Value', num2str(freq_teste));
 
-            % Executar a simulação e salvar as saídas na variável simOut
+            % Continuar a simulação para o restante do tempo
             simOut = sim(modelo_atual, 'StopTime', num2str(sim_time));
+            time2 = simOut.(['freq_' modelos{i}]).time; % Tempo restante
+            freq_data2 = simOut.(['freq_' modelos{i}]).signals.values; % Dados de frequência
 
-            % Acessar os dados diretamente de simOut
-            time = simOut.(['freq_' modelos{i}]).time; % Tempo dos dados
-            freq_data = simOut.(['freq_' modelos{i}]).signals.values; % Dados de frequência
+            % Concatenar os tempos e dados
+            time = [time1; time2 + mid_time];
+            freq_data = [freq_data1; freq_data2];
+
+            % Armazenar resposta para plotagem
+            pll_responses{i, j} = freq_data(:, 2); % Frequência do PLL
+            rede_responses{i, j} = freq_data(:, 1); % Frequência da Rede
+            if isempty(time_vector)
+                time_vector = time; % Armazenar tempo uma única vez
+            end
 
             % Calcular o erro entre a frequência da rede e a frequência do PLL
             freq_rede = freq_data(:, 1); % Primeira coluna: frequência da rede
@@ -85,4 +108,22 @@ function calcula_IAE_ISE()
     f = figure('Name', 'Resultados de ISE e IAE para Vários Freq_Teste', 'NumberTitle', 'off', 'Position', [100, 100, 600, 300]);
     uitable('Parent', f, 'Data', table2cell(resultados_table), 'ColumnName', resultados_table.Properties.VariableNames, ...
             'RowName', [], 'Units', 'normalized', 'Position', [0, 0, 1, 1]);
+
+    % Criar subplot para respostas
+    figure('Name', 'Respostas dos PLLs e Rede para Freq_Teste', 'NumberTitle', 'off');
+    for i = 1:length(modelos)
+        for j = 1:length(freq_teste_values)
+            subplot(length(modelos), length(freq_teste_values), (i - 1) * length(freq_teste_values) + j);
+            plot(time_vector, pll_responses{i, j}, 'b', 'LineWidth', 1.0, 'DisplayName', 'PLL');
+            hold on;
+            plot(time_vector, rede_responses{i, j}, 'r--', 'LineWidth', 1.0, 'DisplayName', 'Rede');
+            xlabel('Tempo (s)');
+            ylabel('Frequência (Hz)');
+            [nome_simples, ~] = strtok(modelos{i}, '_');
+            title(sprintf('%s, Freq = %d', nome_simples, freq_teste_values(j)));
+            legend;
+            grid on;
+            hold off;
+        end
+    end
 end
