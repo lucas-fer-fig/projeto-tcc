@@ -1,4 +1,4 @@
-function [time, freq_data, Vsa_values, Vta_values, Ia_values] = simula_modelos()
+function [time, freq_data, Vsa_values, Vta_values] = simula_modelos()
     % Diretório base dos modelos
     base_dir = fullfile(pwd, 'Simulink');
     model_prefix = 'projeto_';

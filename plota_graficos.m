@@ -1,4 +1,4 @@
-function plota_graficos(time, freq_data, Vsa_values, Vta_values, Ia_values)
+function plota_graficos(time, freq_data, Vsa_values, Vta_values)
     % Lista dos modelos e estilos de linha para os gráficos
     modelos = {'SRF_PLL', 'SOGI_PLL', 'EPLL', 'QPLL'};
     tipo_linha = {'m-', 'b-', 'g-', 'c-'};
@@ -68,46 +68,6 @@ function plota_graficos(time, freq_data, Vsa_values, Vta_values, Ia_values)
     end
     xlabel('Tempo (s)');
     ylabel('Tensão (V)');
-    title('Zoom em torno de 0.4 s');
-    xlim([0.3 0.5]);
-    grid on;
-    hold off;
-
-    % Figura para os gráficos de corrente Ia com subplots
-    figure;
-    subplot(2, 2, [1 2]);
-    hold on;
-    for i = 1:length(modelos)
-        [nome_simples, ~] = strtok(modelos{i}, '_');
-        plot(time, Ia_values{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['Ia ' nome_simples]);
-    end
-    xlabel('Tempo (s)');
-    ylabel('Corrente Ia (A)');
-    title('Corrente Ia para cada PLL');
-    legend;
-    grid on;
-    hold off;
-
-    % Subplots com zoom em 0.2 s e 0.4 s para corrente Ia
-    subplot(2, 2, 3);
-    hold on;
-    for i = 1:length(modelos)
-        plot(time, Ia_values{i}, tipo_linha{i}, 'LineWidth', 1.0);
-    end
-    xlabel('Tempo (s)');
-    ylabel('Corrente Ia (A)');
-    title('Zoom em torno de 0.2 s');
-    xlim([0.1 0.3]);
-    grid on;
-    hold off;
-
-    subplot(2, 2, 4);
-    hold on;
-    for i = 1:length(modelos)
-        plot(time, Ia_values{i}, tipo_linha{i}, 'LineWidth', 1.0);
-    end
-    xlabel('Tempo (s)');
-    ylabel('Corrente Ia (A)');
     title('Zoom em torno de 0.4 s');
     xlim([0.3 0.5]);
     grid on;

@@ -17,8 +17,8 @@ R = 1.63e-3;
 L = 100e-6;
 Ibase = 2;
 
-[time, freq_data, Vsa_values, Vta_values, Ia_values] = simula_modelos();
-plota_graficos(time, freq_data, Vsa_values, Vta_values, Ia_values);
+[time, freq_data, Vsa_values, Vta_values] = simula_modelos();
+plota_graficos(time, freq_data, Vsa_values, Vta_values);
 
 calcula_IAE_ISE();
 

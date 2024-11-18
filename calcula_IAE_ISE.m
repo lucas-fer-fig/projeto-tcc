@@ -67,21 +67,25 @@ function calcula_IAE_ISE()
             time = [time1; time2 + mid_time];
             freq_data = [freq_data1; freq_data2];
 
+            % Determinar o índice correspondente a 90% de mid_time
+            start_idx = find(time >= 0.9 * mid_time, 1);
+
+            % Restrição dos dados ao intervalo desejado
+            time_interval = time(start_idx:end);
+            freq_rede_interval = freq_data(start_idx:end, 1); % Frequência da rede
+            freq_pll_interval = freq_data(start_idx:end, 2);  % Frequência do PLL
+            erro_interval = freq_rede_interval - freq_pll_interval;
+
             % Armazenar resposta para plotagem
-            pll_responses{i, j} = freq_data(:, 2); % Frequência do PLL
-            rede_responses{i, j} = freq_data(:, 1); % Frequência da Rede
+            pll_responses{i, j} = freq_pll_interval; % Frequência do PLL
+            rede_responses{i, j} = freq_rede_interval; % Frequência da Rede
             if isempty(time_vector)
-                time_vector = time; % Armazenar tempo uma única vez
+                time_vector = time_interval; % Armazenar tempo uma única vez
             end
 
-            % Calcular o erro entre a frequência da rede e a frequência do PLL
-            freq_rede = freq_data(:, 1); % Primeira coluna: frequência da rede
-            freq_pll = freq_data(:, 2);  % Segunda coluna: frequência do PLL
-            erro = freq_rede - freq_pll;
-
-            % Calcular ISE e IAE para o modelo e freq_teste atual
-            ISE = trapz(time, erro.^2);       % Integral do erro ao quadrado
-            IAE = trapz(time, abs(erro));     % Integral do valor absoluto do erro
+            % Calcular ISE e IAE para o intervalo
+            ISE = trapz(time_interval, erro_interval.^2);       % Integral do erro ao quadrado
+            IAE = trapz(time_interval, abs(erro_interval));     % Integral do valor absoluto do erro
 
             % Armazenar os resultados com a estrutura da tabela de exemplo
             if j == 1
@@ -102,27 +106,42 @@ function calcula_IAE_ISE()
     end
 
     % Criar e exibir a tabela de resultados ISE e IAE
-    resultados_table = cell2table(resultados, 'VariableNames', {'Metodo', 'Frequencia', 'IAE', 'ISE'});
+    resultados_table = cell2table(resultados, 'VariableNames', {'Metodo', 'Delta_f', 'IAE', 'ISE'});
 
     % Criar uma nova janela para exibir a tabela
-    f = figure('Name', 'Resultados de ISE e IAE para Vários Freq_Teste', 'NumberTitle', 'off', 'Position', [100, 100, 600, 300]);
+    f = figure('Name', 'Resultados de IAE e ISE para os testes de variação de frequências', 'NumberTitle', 'off', 'Position', [100, 100, 600, 300]);
     uitable('Parent', f, 'Data', table2cell(resultados_table), 'ColumnName', resultados_table.Properties.VariableNames, ...
             'RowName', [], 'Units', 'normalized', 'Position', [0, 0, 1, 1]);
 
     % Criar subplot para respostas
-    figure('Name', 'Respostas dos PLLs e Rede para Freq_Teste', 'NumberTitle', 'off');
+    figure('Name', 'Respostas dos PLLs e da Rede para os testes de variação de frequências', 'NumberTitle', 'off');
     for i = 1:length(modelos)
         for j = 1:length(freq_teste_values)
+            % Determinar o índice correspondente a 90% de mid_time
+            start_idx = find(time_vector >= 0.9 * mid_time, 1);
+            end_idx = find(time_vector <= sim_time, 1, 'last');
+
+            % Restringir os dados ao intervalo desejado
+            time_interval = time_vector(start_idx:end_idx);
+            pll_interval = pll_responses{i, j}(start_idx:end_idx);
+            rede_interval = rede_responses{i, j}(start_idx:end_idx);
+
+            % Criar o subplot
             subplot(length(modelos), length(freq_teste_values), (i - 1) * length(freq_teste_values) + j);
-            plot(time_vector, pll_responses{i, j}, 'b', 'LineWidth', 1.0, 'DisplayName', 'PLL');
+            plot(time_interval, pll_interval, 'b', 'LineWidth', 1.0, 'DisplayName', 'PLL');
             hold on;
-            plot(time_vector, rede_responses{i, j}, 'r--', 'LineWidth', 1.0, 'DisplayName', 'Rede');
+            plot(time_interval, rede_interval, 'r--', 'LineWidth', 1.0, 'DisplayName', 'Rede');
             xlabel('Tempo (s)');
             ylabel('Frequência (Hz)');
             [nome_simples, ~] = strtok(modelos{i}, '_');
-            title(sprintf('%s, Freq = %d', nome_simples, freq_teste_values(j)));
+            title(sprintf('%s, \\Deltaf = %d', nome_simples, freq_teste_values(j)), 'Interpreter', 'tex');
             legend;
             grid on;
+
+            % Ajustar a janela do gráfico para o intervalo desejado
+            xlim([0.9 * mid_time, sim_time]);
+            ylim([min([pll_interval; rede_interval]), max([pll_interval; rede_interval])]);
+
             hold off;
         end
     end
