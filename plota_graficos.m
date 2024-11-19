@@ -13,7 +13,7 @@ function plota_graficos(time, freq_data, Vsa_values, Vta_values)
         freq_rede = freq_data{i}(:, 1);
         freq_pll = freq_data{i}(:, 2);
         if i == 1
-            plot(time, freq_rede, 'r-', 'LineWidth', 1.5, 'DisplayName', 'Frequência da Rede');
+            plot(time, freq_rede, 'r--', 'LineWidth', 1.5, 'DisplayName', 'Frequência da Rede');
         end
         plot(time, freq_pll, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['Frequência ' nome_simples]);
     end
@@ -31,13 +31,13 @@ function plota_graficos(time, freq_data, Vsa_values, Vta_values)
     for i = 1:length(modelos)
         [nome_simples, ~] = strtok(modelos{i}, '_');
         if i == 1
-            plot(time, Vsa_values{i}, 'r-', 'LineWidth', 1.5, 'DisplayName', 'Vs');
+            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 1.5, 'DisplayName', 'V_{sa}');
         end
-        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['Vta ' nome_simples]);
+        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['V_{ta} ' nome_simples]);
     end
     xlabel('Tempo (s)');
     ylabel('Tensão (V)');
-    title('Tensões Vs e Vta para cada PLL');
+    title('Tensões V_s e V_{ta} para cada PLL');
     legend;
     grid on;
     hold off;
@@ -47,14 +47,14 @@ function plota_graficos(time, freq_data, Vsa_values, Vta_values)
     hold on;
     for i = 1:length(modelos)
         if i == 1
-            plot(time, Vsa_values{i}, 'r-', 'LineWidth', 1.5);
+            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 1.5);
         end
         plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0);
     end
     xlabel('Tempo (s)');
     ylabel('Tensão (V)');
-    title('Zoom em torno de 0.2 s');
-    xlim([0.1 0.3]);
+    title('Zoom em torno de 0.24 s');
+    xlim([0.14 0.34]);
     grid on;
     hold off;
 
@@ -62,14 +62,14 @@ function plota_graficos(time, freq_data, Vsa_values, Vta_values)
     hold on;
     for i = 1:length(modelos)
         if i == 1
-            plot(time, Vsa_values{i}, 'r-', 'LineWidth', 1.5);
+            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 1.5);
         end
         plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0);
     end
     xlabel('Tempo (s)');
     ylabel('Tensão (V)');
-    title('Zoom em torno de 0.4 s');
-    xlim([0.3 0.5]);
+    title('Zoom em torno de 0.44 s');
+    xlim([0.34 0.54]);
     grid on;
     hold off;
 end

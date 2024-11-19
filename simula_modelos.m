@@ -13,7 +13,6 @@ function [time, freq_data, Vsa_values, Vta_values] = simula_modelos()
     freq_data = cell(1, length(modelos));
     Vsa_values = cell(1, length(modelos));
     Vta_values = cell(1, length(modelos));
-    Ia_values = cell(1, length(modelos));
     
     % Executar a simulação para cada modelo
     for i = 1:length(modelos)
@@ -43,7 +42,6 @@ function [time, freq_data, Vsa_values, Vta_values] = simula_modelos()
         % Extrair valores de Vs (Vsa) e Vt (Vta) e corrente Ia
         Vsa_values{i} = simOut.(['Va_' modelos{i}]).signals.values(:, 2); % Vsa
         Vta_values{i} = simOut.(['Va_' modelos{i}]).signals.values(:, 1); % Vta
-        Ia_values{i} = simOut.(['Iabc_' modelos{i}]).signals.values(:, 1); % Ia
     end
     
     % Fechar os modelos

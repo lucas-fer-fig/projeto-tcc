@@ -140,7 +140,7 @@ function calcula_IAE_ISE()
 
             % Ajustar a janela do gráfico para o intervalo desejado
             xlim([0.9 * mid_time, sim_time]);
-            ylim([min([pll_interval; rede_interval]), max([pll_interval; rede_interval])]);
+            ylim([0.98*min([pll_interval; rede_interval]), 1.02*max([pll_interval; rede_interval])]);
 
             hold off;
         end

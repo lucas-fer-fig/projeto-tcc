@@ -20,6 +20,8 @@ Ibase = 2;
 [time, freq_data, Vsa_values, Vta_values] = simula_modelos();
 plota_graficos(time, freq_data, Vsa_values, Vta_values);
 
+realiza_testes_v_pu();
+
 calcula_IAE_ISE();
 
 % Resetar a configuração de cache do Simulink para o padrão
