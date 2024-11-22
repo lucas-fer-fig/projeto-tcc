@@ -1,4 +1,4 @@
-function realiza_testes_v_pu()
+function simula_tensao_pu()
     % Diretório base dos modelos
     base_dir = fullfile(pwd, 'Simulink');  % Usa o diretório de trabalho atual e 'Simulink'
     model_prefix = 'projeto_';
@@ -9,6 +9,7 @@ function realiza_testes_v_pu()
     Kp_values = [100, 154.8, 180, 9.9];
     Ki_values = [4228, 7871.2, 5202.3, 1440];
     sim_time = 0.6; % Tempo total de simulação em segundos
+    Vp = 391; % Valor de referência para escala pu
 
     % Pré-alocar variáveis para resultados
     source_voltage = cell(2, 1); % Armazena tensões da fonte para os dois testes
@@ -54,13 +55,13 @@ function realiza_testes_v_pu()
             % Armazenar os resultados para cada modelo
             if i == 1
                 source_data = simOut.(['Va_' modelos{i}]).signals.values(:, 2); % Tensão da fonte
-                source_voltage{test} = source_data; % Apenas uma vez para a fonte
+                source_voltage{test} = source_data / (0.5 * Vp); % Normalizar em pu
                 time_vector{test} = time; % Apenas uma vez para o tempo
             end
-            vta_voltage{test, i} = vta_data;
+            vta_voltage{test, i} = vta_data / (0.5 * Vp); % Normalizar em pu
         end
     end
-
+    
     % Criar a figura para os gráficos
     figure('Name', 'Testes com variação de tensão em PU', 'NumberTitle', 'off');
 
@@ -74,8 +75,8 @@ function realiza_testes_v_pu()
     end
     hold off;
     xlabel('Tempo (s)');
-    ylabel('Tensão (V)');
-    title('Variação com Teste 1: 90% V_p');
+    ylabel('Tensão (pu)');
+    title('Variação com Teste 1: 0.9 pu');
     legend;
     grid on;
 
@@ -89,8 +90,8 @@ function realiza_testes_v_pu()
     end
     hold off;
     xlabel('Tempo (s)');
-    ylabel('Tensão (V)');
-    title('Variação com Teste 2: 110% V_p');
+    ylabel('Tensão (pu)');
+    title('Variação com Teste 2: 1.1 pu');
     legend;
     grid on;
 
@@ -104,8 +105,8 @@ function realiza_testes_v_pu()
     end
     hold off;
     xlabel('Tempo (s)');
-    ylabel('Tensão (V)');
-    title('Zoom - Teste 1: 90% V_p');
+    ylabel('Tensão (pu)');
+    title('Zoom - Teste 1: 0.9 pu');
     xlim([0.25 0.35]); % Ajuste para centrar o zoom em 0.3
     grid on;
 
@@ -119,8 +120,8 @@ function realiza_testes_v_pu()
     end
     hold off;
     xlabel('Tempo (s)');
-    ylabel('Tensão (V)');
-    title('Zoom - Teste 2: 110% V_p');
+    ylabel('Tensão (pu)');
+    title('Zoom - Teste 2: 1.1 pu');
     xlim([0.25 0.35]); % Ajuste para centrar o zoom em 0.3
     grid on;
 

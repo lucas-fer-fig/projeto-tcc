@@ -13,12 +13,9 @@ function calcula_IAE_ISE()
 
     % Pré-alocar células para resultados organizados para cada modelo e frequência
     resultados = cell(length(modelos) * length(freq_teste_values), 4);
+    IAE_values = zeros(length(modelos), length(freq_teste_values));
+    ISE_values = zeros(length(modelos), length(freq_teste_values));
     row = 1;
-
-    % Para plotagem: armazenar dados para subplot
-    pll_responses = cell(length(modelos), length(freq_teste_values));
-    rede_responses = cell(length(modelos), length(freq_teste_values));
-    time_vector = [];
 
     % Executar a simulação para cada modelo e calcular ISE e IAE para cada freq_teste
     for i = 1:length(modelos)
@@ -76,18 +73,15 @@ function calcula_IAE_ISE()
             freq_pll_interval = freq_data(start_idx:end, 2);  % Frequência do PLL
             erro_interval = freq_rede_interval - freq_pll_interval;
 
-            % Armazenar resposta para plotagem
-            pll_responses{i, j} = freq_pll_interval; % Frequência do PLL
-            rede_responses{i, j} = freq_rede_interval; % Frequência da Rede
-            if isempty(time_vector)
-                time_vector = time_interval; % Armazenar tempo uma única vez
-            end
-
             % Calcular ISE e IAE para o intervalo
             ISE = trapz(time_interval, erro_interval.^2);       % Integral do erro ao quadrado
             IAE = trapz(time_interval, abs(erro_interval));     % Integral do valor absoluto do erro
 
-            % Armazenar os resultados com a estrutura da tabela de exemplo
+            % Armazenar os resultados
+            IAE_values(i, j) = IAE;
+            ISE_values(i, j) = ISE;
+
+            % Preencher a tabela de resultados
             if j == 1
                 resultados{row, 1} = modelos{i};  % Nome do modelo só na primeira linha do bloco
             else
@@ -113,36 +107,37 @@ function calcula_IAE_ISE()
     uitable('Parent', f, 'Data', table2cell(resultados_table), 'ColumnName', resultados_table.Properties.VariableNames, ...
             'RowName', [], 'Units', 'normalized', 'Position', [0, 0, 1, 1]);
 
-    % Criar subplot para respostas
-    figure('Name', 'Respostas dos PLLs e da Rede para os testes de variação de frequências', 'NumberTitle', 'off');
+    % Criar uma nova janela para os gráficos
+    figure('Name', 'IAE e ISE em função de Delta_f', 'NumberTitle', 'off');
+
+    % Gráfico 1: IAE
+    subplot(1, 2, 1);
+    hold on;
+    markers = {'o-', 's-', 'd-', '^-'}; % Marcadores para cada modelo
     for i = 1:length(modelos)
-        for j = 1:length(freq_teste_values)
-            % Determinar o índice correspondente a 90% de mid_time
-            start_idx = find(time_vector >= 0.9 * mid_time, 1);
-            end_idx = find(time_vector <= sim_time, 1, 'last');
-
-            % Restringir os dados ao intervalo desejado
-            time_interval = time_vector(start_idx:end_idx);
-            pll_interval = pll_responses{i, j}(start_idx:end_idx);
-            rede_interval = rede_responses{i, j}(start_idx:end_idx);
-
-            % Criar o subplot
-            subplot(length(modelos), length(freq_teste_values), (i - 1) * length(freq_teste_values) + j);
-            plot(time_interval, pll_interval, 'b', 'LineWidth', 1.0, 'DisplayName', 'PLL');
-            hold on;
-            plot(time_interval, rede_interval, 'r--', 'LineWidth', 1.0, 'DisplayName', 'Rede');
-            xlabel('Tempo (s)');
-            ylabel('Frequência (Hz)');
-            [nome_simples, ~] = strtok(modelos{i}, '_');
-            title(sprintf('%s, \\Deltaf = %d', nome_simples, freq_teste_values(j)), 'Interpreter', 'tex');
-            legend;
-            grid on;
-
-            % Ajustar a janela do gráfico para o intervalo desejado
-            xlim([0.9 * mid_time, sim_time]);
-            ylim([0.98*min([pll_interval; rede_interval]), 1.02*max([pll_interval; rede_interval])]);
-
-            hold off;
-        end
+        [nome_simples, ~] = strtok(modelos{i}, '_');
+        % Adicionar marcador específico para cada modelo
+        plot(freq_teste_values, IAE_values(i, :), markers{i}, 'DisplayName', nome_simples, 'LineWidth', 1.5);
     end
+    hold off;
+    xlabel('\Delta f (Hz)');
+    ylabel('IAE');
+    title('IAE vs \Delta f');
+    legend('Location', 'northwest');
+    grid on;
+
+    % Gráfico 2: ISE
+    subplot(1, 2, 2);
+    hold on;
+    for i = 1:length(modelos)
+        [nome_simples, ~] = strtok(modelos{i}, '_');
+        % Adicionar marcador específico para cada modelo
+        plot(freq_teste_values, ISE_values(i, :), markers{i}, 'DisplayName', nome_simples, 'LineWidth', 1.5);
+    end
+    hold off;
+    xlabel('\Delta f (Hz)');
+    ylabel('ISE');
+    title('ISE vs \Delta f');
+    legend('Location', 'northwest');
+    grid on;
 end
