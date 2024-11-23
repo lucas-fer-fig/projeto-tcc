@@ -1,6 +1,6 @@
 function simula_tensao_pu()
     modelos = {'SRF_PLL', 'SOGI_PLL', 'EPLL', 'QPLL'};
-    tipo_linha = {'m-', 'b-', 'y-', 'g-'};
+    tipo_linha = {'g-', 'b-', 'c-', 'm-'};
     Kp_values = [100, 154.8, 180, 9.9];
     Ki_values = [4228, 7871.2, 5202.3, 1440];
     sim_time = 0.6;
