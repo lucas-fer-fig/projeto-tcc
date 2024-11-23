@@ -82,10 +82,10 @@ end
 
 function plota_tensao_pu(time, source_voltage, vta_voltage, modelos, tipo_linha, letra)
     hold on;
-    plot(time, source_voltage, 'r--', 'LineWidth', 1.5, 'DisplayName', '$V_{sa}$');
+    plot(time, source_voltage, 'r--', 'LineWidth', 2, 'DisplayName', '$V_{sa}$');
     for i = 1:length(modelos)
         [nome_simples, ~] = strtok(modelos{i}, '_');
-        plot(time, vta_voltage{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['$V_{ta}~' nome_simples '$']);
+        plot(time, vta_voltage{i}, tipo_linha{i}, 'LineWidth', 2, 'DisplayName', ['$V_{ta}~' nome_simples '$']);
     end
     hold off;
     formatar_grafico(letra);
@@ -93,10 +93,10 @@ end
 
 function plota_tensao_pu_zoom(time, source_voltage, vta_voltage, modelos, tipo_linha, letra, x_limits)
     hold on;
-    plot(time, source_voltage, 'r--', 'LineWidth', 1.5, 'DisplayName', '$V_{sa}$');
+    plot(time, source_voltage, 'r--', 'LineWidth', 2, 'DisplayName', '$V_{sa}$');
     for i = 1:length(modelos)
         [nome_simples, ~] = strtok(modelos{i}, '_');
-        plot(time, vta_voltage{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['$V_{ta}~' nome_simples '$']);
+        plot(time, vta_voltage{i}, tipo_linha{i}, 'LineWidth', 2, 'DisplayName', ['$V_{ta}~' nome_simples '$']);
     end
     hold off;
     xlim(x_limits);

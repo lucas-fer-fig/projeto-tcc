@@ -54,10 +54,10 @@ function plota_frequencias(freq_data, time, modelos, tipo_linha)
         freq_pll = freq_data{i}(:, 2);
 
         if i == 1
-            plot(time, freq_rede, 'r--', 'LineWidth', 1.5, 'DisplayName', 'Frequência Rede');
+            plot(time, freq_rede, 'r--', 'LineWidth', 2, 'DisplayName', 'Frequência Rede');
         end
 
-        plot(time, freq_pll, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['Frequência ' nome_simples]);
+        plot(time, freq_pll, tipo_linha{i}, 'LineWidth', 2, 'DisplayName', ['Frequência ' nome_simples]);
     end
 
     formatar_grafico_sem_letra('Frequência (Hz)', 'Tempo (s)', true);
@@ -84,10 +84,10 @@ function plota_tensoes_subplot(time, Vsa_values, Vta_values, modelos, tipo_linha
         [nome_simples, ~] = strtok(modelos{i}, '_');
 
         if i == 1
-            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 1.5, 'DisplayName', '$V_{sa}$');
+            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 2, 'DisplayName', '$V_{sa}$');
         end
 
-        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0, 'DisplayName', ['$V_{ta}$~' nome_simples]);
+        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 2, 'DisplayName', ['$V_{ta}$~' nome_simples]);
     end
 
     formatar_grafico('Tensão (V)', 'Tempo (s)', letra, mostrar_legenda, true);
@@ -99,10 +99,10 @@ function plota_tensoes_zoom(time, Vsa_values, Vta_values, modelos, tipo_linha, a
 
     for i = 1:length(modelos)
         if i == 1
-            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 1.5);
+            plot(time, Vsa_values{i}, 'r--', 'LineWidth', 2);
         end
 
-        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 1.0);
+        plot(time, Vta_values{i}, tipo_linha{i}, 'LineWidth', 2);
     end
 
     xlim(x_limits);
