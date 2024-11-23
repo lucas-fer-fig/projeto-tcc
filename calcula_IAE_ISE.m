@@ -1,143 +1,183 @@
 function calcula_IAE_ISE()
-    % Diretório base dos modelos
-    base_dir = fullfile(pwd, 'Simulink');  % Usa o diretório de trabalho atual e 'Simulink'
-    model_prefix = 'projeto_';
-
-    % Lista dos modelos para simulação e seus parâmetros Kp e Ki
     modelos = {'SRF_PLL', 'SOGI_PLL', 'EPLL', 'QPLL'};
     Kp_values = [100, 154.8, 180, 9.9];
     Ki_values = [4228, 7871.2, 5202.3, 1440];
-    freq_teste_values = [2, 4, 6, 8, 10, 12]; % Valores de freq_teste a serem testados
-    sim_time = 0.6; % Tempo total de simulação em segundos
-    mid_time = sim_time / 2; % Metade do tempo de simulação
+    freq_teste_values = [2, 4, 6, 8, 10, 12];
+    sim_time = 0.6;
 
-    % Pré-alocar células para resultados organizados para cada modelo e frequência
-    resultados = cell(length(modelos) * length(freq_teste_values), 4);
+    [IAE_values, ISE_values, pll_responses, rede_responses, time_vector] = ...
+        simula_modelos(modelos, Kp_values, Ki_values, freq_teste_values, sim_time);
+
+    exibe_tabela_resultados(modelos, freq_teste_values, IAE_values, ISE_values);
+    plota_graficos_IAE_ISE(modelos, freq_teste_values, IAE_values, ISE_values);
+    plota_respostas_PLL(modelos, freq_teste_values, pll_responses, rede_responses, time_vector);
+end
+
+function [IAE_values, ISE_values, pll_responses, rede_responses, time_vector] = ...
+         simula_modelos(modelos, Kp_values, Ki_values, freq_teste_values, sim_time)
+
+    base_dir = fullfile(pwd, 'Simulink');
+    model_prefix = 'projeto_';
+    mid_time = sim_time / 2;
+
     IAE_values = zeros(length(modelos), length(freq_teste_values));
     ISE_values = zeros(length(modelos), length(freq_teste_values));
-    row = 1;
+    pll_responses = cell(length(modelos), length(freq_teste_values));
+    rede_responses = cell(length(modelos), length(freq_teste_values));
+    time_vector = [];
 
-    % Executar a simulação para cada modelo e calcular ISE e IAE para cada freq_teste
     for i = 1:length(modelos)
         model_name = [model_prefix modelos{i}];
         modelo_atual = fullfile(base_dir, model_name);
-        
-        % Carregar o sistema do modelo se não estiver carregado
-        if ~bdIsLoaded(model_name)
-            load_system(modelo_atual);
-        end
+        carregar_modelo(modelo_atual, model_name);
 
-        % Caminho dos blocos com `/`
-        bloco_Kp = [model_name '/PLL/Kp_' modelos{i}];
-        bloco_Ki = [model_name '/PLL/Ki_' modelos{i}];
-        bloco_en_teste = [model_name '/Barra Infinita/Frequência da rede/en_teste'];
-        bloco_freq_teste = [model_name '/Barra Infinita/Frequência da rede/freq_teste'];
+        set_param([model_name '/PLL/Kp_' modelos{i}], 'Gain', num2str(Kp_values(i)));
+        set_param([model_name '/PLL/Ki_' modelos{i}], 'Gain', num2str(Ki_values(i)));
+        set_param([model_name '/Barra Infinita/Frequência da rede/en_teste'], 'Value', '1');
 
-        % Definir o valor do parâmetro en_teste para 1
-        set_param(bloco_en_teste, 'Value', '1');
-
-        % Definir os parâmetros Kp e Ki específicos para cada modelo
-        set_param(bloco_Kp, 'Gain', num2str(Kp_values(i)));
-        set_param(bloco_Ki, 'Gain', num2str(Ki_values(i)));
-
-        % Loop para cada valor de freq_teste
         for j = 1:length(freq_teste_values)
             freq_teste = freq_teste_values(j);
 
-            % Definir o valor inicial do parâmetro freq_teste para 0
-            set_param(bloco_freq_teste, 'Value', '0');
+            set_param([model_name '/Barra Infinita/Frequência da rede/freq_teste'], 'Value', '0');
+            simOut1 = sim(modelo_atual, 'StopTime', num2str(mid_time));
+            time1 = simOut1.(['freq_' modelos{i}]).time;
+            freq_data1 = simOut1.(['freq_' modelos{i}]).signals.values;
 
-            % Executar a simulação até a metade
-            simOut = sim(modelo_atual, 'StopTime', num2str(mid_time));
-            time1 = simOut.(['freq_' modelos{i}]).time; % Tempo até a metade
-            freq_data1 = simOut.(['freq_' modelos{i}]).signals.values; % Dados de frequência
+            set_param([model_name '/Barra Infinita/Frequência da rede/freq_teste'], 'Value', num2str(freq_teste));
+            simOut2 = sim(modelo_atual, 'StopTime', num2str(sim_time));
+            time2 = simOut2.(['freq_' modelos{i}]).time;
+            freq_data2 = simOut2.(['freq_' modelos{i}]).signals.values;
 
-            % Alterar o valor do parâmetro freq_teste para o valor do intervalo
-            set_param(bloco_freq_teste, 'Value', num2str(freq_teste));
-
-            % Continuar a simulação para o restante do tempo
-            simOut = sim(modelo_atual, 'StopTime', num2str(sim_time));
-            time2 = simOut.(['freq_' modelos{i}]).time; % Tempo restante
-            freq_data2 = simOut.(['freq_' modelos{i}]).signals.values; % Dados de frequência
-
-            % Concatenar os tempos e dados
             time = [time1; time2 + mid_time];
             freq_data = [freq_data1; freq_data2];
 
-            % Determinar o índice correspondente a 90% de mid_time
             start_idx = find(time >= 0.9 * mid_time, 1);
-
-            % Restrição dos dados ao intervalo desejado
             time_interval = time(start_idx:end);
-            freq_rede_interval = freq_data(start_idx:end, 1); % Frequência da rede
-            freq_pll_interval = freq_data(start_idx:end, 2);  % Frequência do PLL
+            freq_rede_interval = freq_data(start_idx:end, 1);
+            freq_pll_interval = freq_data(start_idx:end, 2);
             erro_interval = freq_rede_interval - freq_pll_interval;
 
-            % Calcular ISE e IAE para o intervalo
-            ISE = trapz(time_interval, erro_interval.^2);       % Integral do erro ao quadrado
-            IAE = trapz(time_interval, abs(erro_interval));     % Integral do valor absoluto do erro
-
-            % Armazenar os resultados
-            IAE_values(i, j) = IAE;
-            ISE_values(i, j) = ISE;
-
-            % Preencher a tabela de resultados
-            if j == 1
-                resultados{row, 1} = modelos{i};  % Nome do modelo só na primeira linha do bloco
-            else
-                resultados{row, 1} = '';  % Linhas subsequentes vazias para "Metodo"
+            pll_responses{i, j} = freq_pll_interval;
+            rede_responses{i, j} = freq_rede_interval;
+            if isempty(time_vector)
+                time_vector = time_interval;
             end
-            resultados{row, 2} = freq_teste;      % Freq_Teste
-            resultados{row, 3} = IAE;             % IAE
-            resultados{row, 4} = ISE;             % ISE
-            row = row + 1;                        % Próxima linha
+
+            ISE_values(i, j) = trapz(time_interval, erro_interval.^2);
+            IAE_values(i, j) = trapz(time_interval, abs(erro_interval));
+        end
+
+        close_system(model_name, 0);
+    end
+end
+
+function carregar_modelo(modelo_atual, model_name)
+    if ~bdIsLoaded(model_name)
+        load_system(modelo_atual);
+    end
+end
+
+function exibe_tabela_resultados(modelos, freq_teste_values, IAE_values, ISE_values)
+    num_models = length(modelos);
+    num_frequencies = length(freq_teste_values);
+    resultados = cell(num_models * num_frequencies, 4);
+    row = 1;
+
+    for i = 1:num_models
+        for j = 1:num_frequencies
+            if j == 1
+                resultados{row, 1} = modelos{i};
+            else
+                resultados{row, 1} = '';
+            end
+            resultados{row, 2} = freq_teste_values(j);
+            resultados{row, 3} = IAE_values(i, j);
+            resultados{row, 4} = ISE_values(i, j);
+            row = row + 1;
         end
     end
-    
-    % Fechar os modelos
-    for i = 1:length(modelos)
-        close_system([model_prefix modelos{i}], 0);
-    end
 
-    % Criar e exibir a tabela de resultados ISE e IAE
     resultados_table = cell2table(resultados, 'VariableNames', {'Metodo', 'Delta_f', 'IAE', 'ISE'});
 
-    % Criar uma nova janela para exibir a tabela
-    f = figure('Name', 'Resultados de IAE e ISE para os testes de variação de frequências', 'NumberTitle', 'off', 'Position', [100, 100, 600, 300]);
-    uitable('Parent', f, 'Data', table2cell(resultados_table), 'ColumnName', resultados_table.Properties.VariableNames, ...
+    f = figure('Name', 'Resultados de IAE e ISE', 'NumberTitle', 'off', 'Position', [100, 100, 600, 300]);
+    uitable('Parent', f, 'Data', table2cell(resultados_table), ...
+            'ColumnName', resultados_table.Properties.VariableNames, ...
             'RowName', [], 'Units', 'normalized', 'Position', [0, 0, 1, 1]);
+end
 
-    % Criar uma nova janela para os gráficos
-    figure('Name', 'IAE e ISE em função de Delta_f', 'NumberTitle', 'off');
+function plota_graficos_IAE_ISE(modelos, freq_teste_values, IAE_values, ISE_values)
+    figure('Name', 'IAE e ISE em função de \Delta_f', 'NumberTitle', 'off', 'Units', 'normalized', 'OuterPosition', [0 0 1 1]);
+    plota_IAE(modelos, freq_teste_values, IAE_values);
+    plota_ISE(modelos, freq_teste_values, ISE_values);
+end
 
-    % Gráfico 1: IAE
-    subplot(1, 2, 1);
+function plota_IAE(modelos, freq_teste_values, IAE_values)
+    ax1 = subplot(1, 2, 1);
     hold on;
-    markers = {'o-', 's-', 'd-', '^-'}; % Marcadores para cada modelo
+    markers = {'o-', 's-', 'd-', '^-'}; 
+    legends = {}; % Inicializa a lista de rótulos
     for i = 1:length(modelos)
         [nome_simples, ~] = strtok(modelos{i}, '_');
-        % Adicionar marcador específico para cada modelo
-        plot(freq_teste_values, IAE_values(i, :), markers{i}, 'DisplayName', nome_simples, 'LineWidth', 1.5);
+        plot(freq_teste_values, IAE_values(i, :), markers{i}, 'LineWidth', 1.5);
+        legends{end+1} = nome_simples; % Armazena o nome simplificado para a legenda
     end
     hold off;
-    xlabel('\Delta f (Hz)');
-    ylabel('IAE');
-    title('IAE vs \Delta f');
-    legend('Location', 'northwest');
+    xlabel('$\Delta f$ (Hz)', 'FontSize', 16, 'Interpreter', 'latex');
+    ylabel('IAE', 'FontSize', 16, 'Interpreter', 'latex');
+    legend(legends, 'Location', 'northoutside', 'Orientation', 'horizontal', 'FontSize', 14, 'Interpreter', 'none');
     grid on;
+    add_letra(ax1, '(a)');
+end
 
-    % Gráfico 2: ISE
-    subplot(1, 2, 2);
+function plota_ISE(modelos, freq_teste_values, ISE_values)
+    ax2 = subplot(1, 2, 2);
     hold on;
+    markers = {'o-', 's-', 'd-', '^-'}; 
+    legends = {}; % Inicializa a lista de rótulos
     for i = 1:length(modelos)
         [nome_simples, ~] = strtok(modelos{i}, '_');
-        % Adicionar marcador específico para cada modelo
-        plot(freq_teste_values, ISE_values(i, :), markers{i}, 'DisplayName', nome_simples, 'LineWidth', 1.5);
+        plot(freq_teste_values, ISE_values(i, :), markers{i}, 'LineWidth', 1.5);
+        legends{end+1} = nome_simples; % Armazena o nome simplificado para a legenda
     end
     hold off;
-    xlabel('\Delta f (Hz)');
-    ylabel('ISE');
-    title('ISE vs \Delta f');
-    legend('Location', 'northwest');
+    xlabel('$\Delta f$ (Hz)', 'FontSize', 16, 'Interpreter', 'latex');
+    ylabel('ISE', 'FontSize', 16, 'Interpreter', 'latex');
+    legend(legends, 'Location', 'northoutside', 'Orientation', 'horizontal', 'FontSize', 14, 'Interpreter', 'none');
     grid on;
+    add_letra(ax2, '(b)');
+end
+
+
+function plota_respostas_PLL(modelos, freq_teste_values, pll_responses, rede_responses, time_vector)
+    figure('Name', 'Respostas de PLLs e Rede', 'NumberTitle', 'off');
+    for i = 1:length(modelos)
+        for j = 1:length(freq_teste_values)
+            subplot(length(modelos), length(freq_teste_values), (i - 1) * length(freq_teste_values) + j);
+            pll_data = pll_responses{i, j};
+            rede_data = rede_responses{i, j};
+            plot(time_vector, pll_data, 'b', 'LineWidth', 1.0, 'DisplayName', 'PLL');
+            hold on;
+            plot(time_vector, rede_data, 'r--', 'LineWidth', 1.0, 'DisplayName', 'Rede');
+            xlabel('Tempo (s)');
+            ylabel('Frequência (Hz)');
+            [nome_simples, ~] = strtok(modelos{i}, '_');
+            title(sprintf('%s, \\Deltaf = %d', nome_simples, freq_teste_values(j)), 'Interpreter', 'tex');
+            all_data = [pll_data; rede_data];
+            ylim([min(all_data) * 0.99, max(all_data) * 1.01]);
+            legend('Location', 'best');
+            grid on;
+            hold off;
+        end
+    end
+end
+
+function ajustar_limites_verticais(pll_data, rede_data)
+    all_data = [pll_data; rede_data];
+    ylim([min(all_data) * 0.9, max(all_data) * 1.1]);
+end
+
+function add_letra(ax, letra)
+    pos = get(ax, 'Position');
+    annotation('textbox', [pos(1) + (pos(3)/2) - 0.02, pos(2) - 0.1, 0.04, 0.03], ...
+        'String', letra, 'EdgeColor', 'none', 'HorizontalAlignment', 'center', 'FontSize', 14);
 end
