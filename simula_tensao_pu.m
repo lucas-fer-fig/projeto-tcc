@@ -35,10 +35,10 @@ function [source_voltage, vta_voltage, time_vector] = executa_testes(modelos, Kp
 
             if i == 1
                 source_data = simOut.(['Va_' modelos{i}]).signals.values(:, 2);
-                source_voltage{test} = source_data / (0.5 * Vp);
+                source_voltage{test} = source_data / Vp;
                 time_vector{test} = time;
             end
-            vta_voltage{test, i} = vta_data / (0.5 * Vp);
+            vta_voltage{test, i} = vta_data / Vp;
         end
     end
 

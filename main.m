@@ -12,7 +12,6 @@ Simulink.fileGenControl('set', 'CacheFolder', fullfile(pwd, 'Simulink/Cache'));
 Vdc = 1450;
 Vp = 127 * sqrt(2);
 fs = 60;
-Ts = 1 / fs;
 R = 1.63e-3;
 L = 100e-6;
 Ibase = 2;
